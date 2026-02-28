@@ -1,100 +1,213 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <title>Campsite</title>
+  <style>
+    body { margin: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: monospace; color: #fff; }
+    #gl-canvas { display: block; border: 1px solid #333; }
+    #info { margin-top: 10px; font-size: 13px; text-align: center; color: #aaa; }
+    #status { margin-top: 4px; font-size: 12px; color: #f90; }
+  </style>
+</head>
+<body>
 
-<!-- Main Vertex Shader -->
-<script id="vertex-shader" type="x-shader/x-vertex">
-    attribute vec4 vPosition;
-    attribute vec3 vNormal;
-
-    uniform mat4 modelMatrix;
-    uniform mat4 viewMatrix;
-    uniform mat4 projMatrix;
-
-    varying vec3 fNormal;
-    varying vec3 fPos;
-
-    void main() {
-        vec4 worldPos = modelMatrix * vPosition;
-        fPos = worldPos.xyz;
-        fNormal = mat3(modelMatrix) * vNormal;
-
-        gl_Position = projMatrix * viewMatrix * worldPos;
-    }
+<!-- ===================== SKYBOX SHADERS ===================== -->
+<script id="skybox-vertex" type="x-shader/x-vertex">
+attribute vec3 aPosition;
+uniform mat4 uView;
+uniform mat4 uProj;
+varying vec3 vDir;
+void main() {
+    vDir = aPosition;
+    mat4 v = uView;
+    // strip translation
+    v[3][0] = 0.0; v[3][1] = 0.0; v[3][2] = 0.0;
+    vec4 pos = uProj * v * vec4(aPosition, 1.0);
+    gl_Position = pos.xyww; // always depth = 1
+}
+</script>
+<script id="skybox-fragment" type="x-shader/x-fragment">
+precision mediump float;
+varying vec3 vDir;
+uniform samplerCube uSkybox;
+void main() {
+    gl_FragColor = textureCube(uSkybox, normalize(vDir));
+}
 </script>
 
-<!-- Main Fragment Shader -->
+<!-- ===================== MAIN PHONG SHADERS ===================== -->
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+attribute vec3 vNormal;
+attribute vec2 vTexCoord;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProj;
+uniform mat4 uNormalMat;
+
+varying vec3 fPos;
+varying vec3 fNormal;
+varying vec2 fTexCoord;
+
+void main() {
+    vec4 worldPos = uModel * vPosition;
+    fPos = worldPos.xyz;
+    fNormal = mat3(uNormalMat) * vNormal;
+    fTexCoord = vTexCoord;
+    gl_Position = uProj * uView * worldPos;
+}
+</script>
+
 <script id="fragment-shader" type="x-shader/x-fragment">
-    precision mediump float;
+precision mediump float;
 
-    varying vec3 fNormal;
-    varying vec3 fPos;
+varying vec3 fPos;
+varying vec3 fNormal;
+varying vec2 fTexCoord;
 
-    uniform vec3 lightPos;
-    uniform vec3 cameraPos;
+// Point light (campfire)
+uniform vec3  uLightPos;
+uniform vec3  uLightColor;
+uniform float uLightOn;     // 0 or 1
+uniform vec3  uAmbientColor;
 
-    uniform vec4 ambientProduct;
-    uniform vec4 diffuseProduct;
-    uniform vec4 specularProduct;
-    uniform float shininess;
+// Camera
+uniform vec3  uCameraPos;
 
-    void main() {
-        vec3 N = normalize(fNormal);
-        vec3 L = normalize(lightPos - fPos);
-        vec3 V = normalize(cameraPos - fPos);
-        vec3 R = reflect(-L, N);
+// Material
+uniform vec4  uAmbient;
+uniform vec4  uDiffuse;
+uniform vec4  uSpecular;
+uniform float uShininess;
+
+// Texture
+uniform sampler2D uTex;
+uniform float     uUseTex;  // 1 = use texture, 0 = use diffuse color
+
+void main() {
+    vec3 N = normalize(fNormal);
+    vec3 V = normalize(uCameraPos - fPos);
+
+    vec4 baseColor = uUseTex > 0.5
+        ? texture2D(uTex, fTexCoord)
+        : uDiffuse;
+
+    // Ambient
+    vec3 color = uAmbient.rgb * uAmbientColor;
+
+    // Point light (campfire)
+    if (uLightOn > 0.5) {
+        vec3 L = normalize(uLightPos - fPos);
+        float dist = length(uLightPos - fPos);
+        float atten = 1.0 / (1.0 + 0.09*dist + 0.032*dist*dist);
 
         float diff = max(dot(N, L), 0.0);
-        float spec = pow(max(dot(V, R), 0.0), shininess);
+        vec3 R = reflect(-L, N);
+        float spec = pow(max(dot(V, R), 0.0), uShininess);
 
-        vec4 color = ambientProduct +
-                     diffuseProduct * diff +
-                     specularProduct * spec;
-
-        gl_FragColor = color;
+        color += uLightColor * atten * (baseColor.rgb * diff + uSpecular.rgb * spec);
     }
+
+    gl_FragColor = vec4(color, baseColor.a);
+}
 </script>
 
-<!-- Skybox Vertex Shader -->
-<script id="skybox-vertex" type="x-shader/x-vertex">
-    attribute vec3 aPosition;
-
-    uniform mat4 viewMatrix;
-    uniform mat4 projMatrix;
-
-    varying vec3 vDir;
-
-    void main() {
-        // direction for cubemap lookup
-        vDir = aPosition;
-        // remove translation from view
-        mat4 v = viewMatrix;
-        v[0][3] = 0.0;
-        v[1][3] = 0.0;
-        v[2][3] = 0.0;
-        gl_Position = projMatrix * v * vec4(aPosition, 1.0);
-    }
+<!-- ===================== SHADOW SHADERS ===================== -->
+<script id="shadow-vertex" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+uniform mat4 uShadowMat;
+uniform mat4 uView;
+uniform mat4 uProj;
+void main() {
+    gl_Position = uProj * uView * uShadowMat * vPosition;
+}
+</script>
+<script id="shadow-fragment" type="x-shader/x-fragment">
+precision mediump float;
+void main() {
+    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.5);
+}
 </script>
 
-<!-- Skybox Fragment Shader -->
-<script id="skybox-fragment" type="x-shader/x-fragment">
-    precision mediump float;
+<!-- ===================== REFLECTION / REFRACTION SHADERS ===================== -->
+<script id="envmap-vertex" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+attribute vec3 vNormal;
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProj;
+uniform mat4 uNormalMat;
+varying vec3 fPos;
+varying vec3 fNormal;
+void main() {
+    vec4 worldPos = uModel * vPosition;
+    fPos = worldPos.xyz;
+    fNormal = mat3(uNormalMat) * vNormal;
+    gl_Position = uProj * uView * worldPos;
+}
+</script>
 
-    varying vec3 vDir;
-    uniform samplerCube uSkybox;
-
-    void main() {
-        gl_FragColor = textureCube(uSkybox, normalize(vDir));
+<script id="reflect-fragment" type="x-shader/x-fragment">
+precision mediump float;
+varying vec3 fPos;
+varying vec3 fNormal;
+uniform vec3 uCameraPos;
+uniform samplerCube uSkybox;
+uniform float uRefractRatio; // for refraction: eta ratio
+uniform float uIsRefract;    // 0=reflect, 1=refract
+void main() {
+    vec3 N = normalize(fNormal);
+    vec3 V = normalize(fPos - uCameraPos);
+    vec3 dir;
+    if (uIsRefract > 0.5) {
+        dir = refract(V, N, uRefractRatio);
+    } else {
+        dir = reflect(V, N);
     }
+    gl_FragColor = textureCube(uSkybox, dir);
+}
+</script>
+
+<!-- ===================== FIRE SHADERS ===================== -->
+<script id="fire-vertex" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProj;
+varying float vHeight;
+void main() {
+    vHeight = vPosition.y;
+    gl_Position = uProj * uView * uModel * vPosition;
+}
+</script>
+<script id="fire-fragment" type="x-shader/x-fragment">
+precision mediump float;
+varying float vHeight;
+uniform float uTime;
+uniform float uFlicker;
+void main() {
+    // color from yellow at base to red/transparent at top
+    float t = clamp(vHeight, 0.0, 1.0);
+    vec3 fireColor = mix(vec3(1.0, 0.9, 0.1), vec3(1.0, 0.1, 0.0), t);
+    float alpha = (1.0 - t) * uFlicker;
+    gl_FragColor = vec4(fireColor, alpha);
+}
 </script>
 
 <script src="lib/webgl-utils.js"></script>
 <script src="lib/initShaders.js"></script>
 <script src="lib/MV.js"></script>
+<script src="lib/objLoader.js"></script>
 <script src="main.js"></script>
 
-<body>
-<canvas id="gl-canvas" width="600" height="600">
-    Your browser doesn't support HTML5 canvas.
-</canvas>
+<canvas id="gl-canvas" width="700" height="700"></canvas>
+<div id="info">
+  Arrow Keys: Rotate Camera &nbsp;|&nbsp;
+  C: Toggle Camera Auto-Rotate &nbsp;|&nbsp;
+  S: Toggle Shadows &nbsp;|&nbsp;
+  D: Toggle Campfire Light
+</div>
+<div id="status" id="status">Loading...</div>
 </body>
 </html>
