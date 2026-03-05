@@ -12,11 +12,11 @@ let modelMatrixLoc, viewMatrixLoc, projMatrixLoc;
 let lightPosLoc, cameraPosLoc;
 let time = 0;
 let lastTime = null;
-let swayTime = 0; 
+let swayTime = 0;
 let autoRotate = false;
 let showShadows = true;
 let lightOn = true;
-let swingLantern = true; 
+let swingLantern = true;
 let autoTheta = 0;
 let theta = 0;
 
@@ -27,7 +27,7 @@ let lanternOBJ   = null;
 let meshes = {};
 let groundTex, tentTex, campfireTex, lanternTex;
 
-// Dictionaries to hold shader locations 
+// Dictionaries to hold shader locations
 let sloc = {}; // Shadow locations
 let eloc = {}; // Environment mapping locations
 let mloc = {}; // Main shader locations
@@ -43,7 +43,7 @@ window.addEventListener("keydown", (e) => {
     if (e.key === "c" || e.key === "C") autoRotate = !autoRotate;
     if (e.key === "s" || e.key === "S") showShadows = !showShadows;
     if (e.key === "d" || e.key === "D") lightOn = !lightOn;
-    if (e.key === "a" || e.key === "A") swingLantern = !swingLantern; 
+    if (e.key === "a" || e.key === "A") swingLantern = !swingLantern;
     updateStatus();
 });
 
@@ -55,7 +55,7 @@ function updateStatus() {
         `[C] Cam:${autoRotate ? "AUTO" : "MANUAL"}  ` +
         `[S] Shadows:${showShadows ? "ON" : "OFF"}  ` +
         `[D] Fire:${lightOn ? "ON" : "OFF"}  ` +
-        `[A] Lantern:${swingLantern ? "SWING" : "STILL"}`; 
+        `[A] Lantern:${swingLantern ? "SWING" : "STILL"}`;
 }
 
 // Math trick to smash 3D coordinates onto a flat plane based on a light position
@@ -63,15 +63,15 @@ function makeShadowMat(lp, groundY) {
     let A=0, B=1, C=0, D=-groundY;
     let lx=lp[0], ly=lp[1], lz=lp[2], lw=1;
     let dot = B*ly + D*lw;
-    return mat4(
+    return transpose(mat4(
         dot-lx*A,  -ly*A,    -lz*A,    -lw*A,
         -lx*B,    dot-ly*B, -lz*B,    -lw*B,
         -lx*C,    -ly*C,   dot-lz*C,  -lw*C,
         -lx*D,    -ly*D,   -lz*D,    dot-lw*D
-    );
+    ));
 }
 
-// Basic geometry generators. These build vertices, normals, and UVs 
+// Basic geometry generators. These build vertices, normals, and UVs
 function makeDisk(cx, yVal, cz, r, segs, nx, ny, nz) {
     let verts=[], norms=[], texs=[], idx=[];
     verts.push(cx,yVal,cz,1); norms.push(nx,ny,nz); texs.push(0.5,0.5);
@@ -195,7 +195,7 @@ function setMainUniforms(modelM, useTex, tex, amb, diff, spec, shin) {
     gl.uniform4fv(mloc.specular, flatten(spec));
     gl.uniform1f(mloc.shininess, shin);
     gl.uniform3fv(mloc.emissive, new Float32Array([0, 0, 0]));
-    
+
     if (useTex && tex) {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -235,11 +235,11 @@ function drawShadow(mesh, modelM, shadowM) {
     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vbo);
     gl.vertexAttribPointer(sloc.vPos, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(sloc.vPos);
-    
+
     // Enable transparency for the shadows
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    
+
     if (mesh.isIndexed) {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.ibo);
         gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
@@ -249,7 +249,7 @@ function drawShadow(mesh, modelM, shadowM) {
     gl.disable(gl.BLEND);
 }
 
-// Draws things that reflect the skybox 
+// Draws things that reflect the skybox
 function drawEnvMesh(mesh, modelM, isRefract, eta) {
     gl.useProgram(envProgram);
     gl.uniformMatrix4fv(eloc.model,     false, flatten(modelM));
@@ -259,17 +259,17 @@ function drawEnvMesh(mesh, modelM, isRefract, eta) {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture);
     gl.uniform1i(eloc.skybox, 1);
-    
+
     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vbo);
     gl.vertexAttribPointer(eloc.vPos, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(eloc.vPos);
     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.nbo);
     gl.vertexAttribPointer(eloc.vNorm, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(eloc.vNorm);
-    
+
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    
+
     if (mesh.isIndexed) {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.ibo);
         gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
@@ -401,7 +401,7 @@ window.onload = async function init() {
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, REFL_SIZE, REFL_SIZE);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, reflectionDepth);
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null); 
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     // Skybox cube geometry
     const skyboxVertices = new Float32Array([
@@ -437,7 +437,7 @@ window.onload = async function init() {
 
     meshes.puddle  = uploadMesh(makeDisk(2.2, 0.005, 1.2, 0.9, 24, 0,1,0));
     meshes.fire    = uploadMesh(buildFireGeo());
-    
+
     // Procedural trees and posts
     meshes.post = uploadMesh(makeCylinder(3.6, 0, 0.5, 0.07, 2.8, 8));
     meshes.arm  = uploadMesh(makeCylinder(0, 0, 0, 0.07, 0.8, 8));
@@ -558,16 +558,16 @@ function render(timestamp) {
     ]);
 
     // Create the shadow squishing matrix for the campfire light
-    let shadowM = makeShadowMat([lightPos[0], lightPos[1], lightPos[2]], 0.002);
+    let shadowM = makeShadowMat([lightPos[0], lightPos[1] + 3.5, lightPos[2]], 0.002);
 
-    // Calculate lantern swing math 
+    // Calculate lantern swing math
     let swayRad   = (8.0 * Math.sin(swayTime * 0.7)) * Math.PI / 180.0;
     let lanternLx = 2.8 + Math.sin(swayRad) * 0.45;
     let lanternLy = 2.8 - Math.cos(swayRad) * 0.45;
     let lanternLightPos   = new Float32Array([lanternLx, lanternLy, 0.5]);
     let lanternLightColor = new Float32Array([1.0, 0.75, 0.25]);
 
-    // This helper draws the ENTIRE scene. We call it twice: 
+    // This helper draws the ENTIRE scene. We call it twice:
     // Once mirrored into the puddle buffer, and once normally for the main screen.
     function drawScene(isRefl) {
         // If drawing a reflection, flip the lights upside down too
@@ -587,7 +587,7 @@ function render(timestamp) {
         gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(aPos);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skyboxIBO);
-        
+
         gl.depthMask(false); // Don't write to depth buffer so geometry draws over the skybox perfectly
         gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
         gl.depthMask(true);
@@ -651,13 +651,13 @@ function render(timestamp) {
             gl.uniformMatrix4fv(gl.getUniformLocation(fireProgram, "uProj"),  false, flatten(projMatrix));
             gl.uniform1f(gl.getUniformLocation(fireProgram, "uTime"), time);
             gl.uniform1f(gl.getUniformLocation(fireProgram, "uFlicker"), flicker);
-            
+
             let fAP = gl.getAttribLocation(fireProgram, "vPosition");
             gl.bindBuffer(gl.ARRAY_BUFFER, meshes.fire.vbo);
             gl.vertexAttribPointer(fAP, 4, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(fAP);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, meshes.fire.ibo);
-            
+
             gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // Additive blending makes the fire "glow"
             gl.depthMask(false);
             gl.drawElements(gl.TRIANGLES, meshes.fire.count, gl.UNSIGNED_SHORT, 0);
@@ -670,7 +670,7 @@ function render(timestamp) {
         drawMesh(meshes.trunk1);
         setMainUniforms(getModel(mat4()), false, null, vec4(0.05,0.25,0.05,1), vec4(0.1,0.42,0.1,1), noSpec, 1);
         drawMesh(meshes.leaves1a); drawMesh(meshes.leaves1b); drawMesh(meshes.leaves1c);
-        
+
         setMainUniforms(getModel(mat4()), false, null, vec4(0.2,0.12,0.05,1), vec4(0.35,0.22,0.1,1), noSpec, 1);
         drawMesh(meshes.trunk2);
         setMainUniforms(getModel(mat4()), false, null, vec4(0.05,0.25,0.05,1), vec4(0.12,0.45,0.12,1), noSpec, 1);
@@ -690,12 +690,12 @@ function render(timestamp) {
 
         if (lanternOBJ) {
             let sway = 8.0 * Math.sin(swayTime * 0.7);
-            
+
             // Build the matrix right-to-left: Translate down -> rotate -> translate to post
             let lanternM = mult(translate(2.8, 2.8, 0.5), mult(rotateZ(sway), translate(0, -0.9, 0)));
-            
+
             setMainUniforms(getModel(lanternM), true, lanternTex, vec4(0.3, 0.25, 0.1, 1), vec4(0.9, 0.75, 0.4, 1), specMetal, 32);
-            gl.uniform3fv(mloc.emissive, new Float32Array([1.2, 0.9, 0.3])); // Make the bulb area glow 
+            gl.uniform3fv(mloc.emissive, new Float32Array([1.2, 0.9, 0.3])); // Make the bulb area glow
             drawMesh(lanternOBJ);
             if (!isRefl) drawShadow(lanternOBJ, lanternM, shadowM);
 
@@ -710,7 +710,7 @@ function render(timestamp) {
     gl.viewport(0, 0, 1024, 1024);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    
+
     drawScene(true); // Draw everything upside down
 
     // ── PASS 2: NORMAL VIEW (Draw to Screen) ──
@@ -718,7 +718,7 @@ function render(timestamp) {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    
+
     drawScene(false); // Draw everything normally
 
     // ── PASS 3: DRAW THE PUDDLE REFLECTION MESH ──
@@ -741,12 +741,12 @@ function render(timestamp) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.depthMask(false);
-    
+
     if (meshes.puddle.isIndexed) {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, meshes.puddle.ibo);
         gl.drawElements(gl.TRIANGLES, meshes.puddle.count, gl.UNSIGNED_SHORT, 0);
     }
-    
+
     gl.depthMask(true);
     gl.disable(gl.BLEND);
 
