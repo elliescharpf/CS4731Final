@@ -126,6 +126,26 @@ function buildFireGeo() {
     return {verts, norms, texs, idx};
 }
 
+function makeBottle() {
+    // Stack a cylinder body + tapered neck + thin cylinder top
+    let parts = [
+        makeCylinder(-1.5, 0, -1.5, 0.18, 0.8, 16),  // body
+        makeCone(-1.5, 0.8, -1.5, 0.18, 0.25, 16),     // taper to neck
+        makeCylinder(-1.5, 0.9, -1.5, 0.07, 0.3, 16), // neck
+    ];
+    // Merge all parts into one mesh
+    let verts=[], norms=[], texs=[], idx=[];
+    let offset = 0;
+    for (let p of parts) {
+        for (let v of p.verts) verts.push(v);
+        for (let n of p.norms) norms.push(n);
+        for (let t of p.texs)  texs.push(t);
+        for (let i of p.idx)   idx.push(i + offset);
+        offset += p.verts.length / 4;
+    }
+    return {verts, norms, texs, idx};
+}
+
 // Pushes our generated JS arrays into the GPU's memory buffers
 function uploadMesh(geo) {
     function vbuf(data) {
@@ -374,12 +394,15 @@ window.onload = async function init() {
 
     // --- PUDDLE / FRAME BUFFER SETUP ---
     puddleProgram = initShaders(gl, "puddle-vertex", "puddle-fragment");
-    ploc.vPos    = gl.getAttribLocation(puddleProgram, "vPosition");
-    ploc.model   = gl.getUniformLocation(puddleProgram, "uModel");
-    ploc.view    = gl.getUniformLocation(puddleProgram, "uView");
-    ploc.proj    = gl.getUniformLocation(puddleProgram, "uProj");
-    ploc.reflTex = gl.getUniformLocation(puddleProgram, "uReflTex");
-    ploc.time    = gl.getUniformLocation(puddleProgram, "uTime");
+    ploc.vPos      = gl.getAttribLocation(puddleProgram,  "vPosition");
+    ploc.model     = gl.getUniformLocation(puddleProgram, "uModel");
+    ploc.view      = gl.getUniformLocation(puddleProgram, "uView");
+    ploc.proj      = gl.getUniformLocation(puddleProgram, "uProj");
+    ploc.skybox    = gl.getUniformLocation(puddleProgram, "uSkybox");
+    ploc.time      = gl.getUniformLocation(puddleProgram, "uTime");
+    ploc.camPos    = gl.getUniformLocation(puddleProgram, "uCameraPos");
+    ploc.fireColor = gl.getUniformLocation(puddleProgram, "uFireColor");
+    ploc.fireOn    = gl.getUniformLocation(puddleProgram, "uFireOn");
 
     const REFL_SIZE = 1024;
     reflectionFBO = gl.createFramebuffer();
@@ -435,8 +458,24 @@ window.onload = async function init() {
         meshes.ground = { vbo:vbuf(gv), nbo:vbuf(gn), tbo:vbuf(gt), count:6, isIndexed:false };
     }
 
-    meshes.puddle  = uploadMesh(makeDisk(2.2, 0.005, 1.2, 0.9, 24, 0,1,0));
+    // Irregular puddle shape
+    meshes.puddle = uploadMesh(makeIrregularDisk(2.2, 0.005, 1.2, 0.9, 40, 0,1,0));
     meshes.fire    = uploadMesh(buildFireGeo());
+
+    // Irregular disk math to make the puddle not a perfect circle
+    function makeIrregularDisk(cx, yVal, cz, r, segs, nx, ny, nz) {
+        let verts=[], norms=[], texs=[], idx=[];
+        verts.push(cx,yVal,cz,1); norms.push(nx,ny,nz); texs.push(0.5,0.5);
+        for (let i=0; i<=segs; i++) {
+            let a = (i/segs)*2*Math.PI;
+            let rr = r * (1.0 + 0.15*Math.sin(a*2.0) + 0.1*Math.sin(a*3.0+1.0) + 0.08*Math.sin(a*5.0+2.0));
+            verts.push(cx+rr*Math.cos(a), yVal, cz+rr*Math.sin(a), 1);
+            norms.push(nx,ny,nz);
+            texs.push(0.5+0.5*Math.cos(a), 0.5+0.5*Math.sin(a));
+        }
+        for (let i=1; i<=segs; i++) idx.push(0, i, i+1);
+        return {verts, norms, texs, idx};
+    }
 
     // Procedural trees and posts
     meshes.post = uploadMesh(makeCylinder(3.6, 0, 0.5, 0.07, 2.8, 8));
@@ -448,6 +487,7 @@ window.onload = async function init() {
     meshes.trunk2   = uploadMesh(makeCylinder(6,  0, -4,  0.18, 1.8, 8));
     meshes.leaves2a = uploadMesh(makeCone(6, 1.3, -4,  1.0, 1.8, 10));
     meshes.leaves2b = uploadMesh(makeCone(6, 2.1, -4,  0.7, 1.5, 10));
+    meshes.bottle = uploadMesh(makeBottle());
 
     // Start loading textures
     groundTex   = loadTexture("textures/grass.png",                    [60,  100, 40,  255]);
@@ -623,12 +663,10 @@ function render(timestamp) {
         const specMetal = vec4(0.4, 0.4, 0.35, 1);
 
         // Quick helper to flip things upside down if we are drawing the puddle reflection pass
-        function getModel(m) { return isRefl ? mult(scalem(1,-1,1), m) : m; }
+        function getModel(m) { return m; }
 
-        if (!isRefl) {
-            setMainUniforms(mat4(), true, groundTex, vec4(0.3,0.3,0.3,1), vec4(0.5,0.7,0.3,1), noSpec, 1);
-            drawMesh(meshes.ground);
-        }
+        setMainUniforms(mat4(), true, groundTex, vec4(0.3,0.3,0.3,1), vec4(0.5,0.7,0.3,1), noSpec, 1);
+        drawMesh(meshes.ground);
 
         if (tentOBJ) {
             let tentM = translate(-3.5, 0, 0.5);
@@ -703,17 +741,16 @@ function render(timestamp) {
             drawEnvMesh(lanternOBJ, getModel(lanternM), true, 0.67);
             gl.useProgram(program);
         }
-    }
 
-    // ── PASS 1: REFLECTION (Draw to FBO) ──
-    gl.bindFramebuffer(gl.FRAMEBUFFER, reflectionFBO); // Divert rendering to our texture in memory
-    gl.viewport(0, 0, 1024, 1024);
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        // Draw bottle - solid dark green glass base first, then refraction overlay
+        setMainUniforms(getModel(mat4()), false, null,
+            vec4(0.0, 0.05, 0.02, 1),
+            vec4(0.02, 0.08, 0.04, 1),
+            vec4(0.5, 0.8, 0.6, 1), 64);
+        drawMesh(meshes.bottle);
+        drawEnvMesh(meshes.bottle, getModel(mat4()), true, 0.35);    }
 
-    drawScene(true); // Draw everything upside down
-
-    // ── PASS 2: NORMAL VIEW (Draw to Screen) ──
+    // ── PASS 1: NORMAL VIEW (Draw to Screen) ──
     gl.bindFramebuffer(gl.FRAMEBUFFER, null); // Return rendering to the HTML canvas
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -721,23 +758,24 @@ function render(timestamp) {
 
     drawScene(false); // Draw everything normally
 
-    // ── PASS 3: DRAW THE PUDDLE REFLECTION MESH ──
-    // Using upside down scene texture apply it to the flat disk on the ground
+    // ── PASS 2: DRAW THE PUDDLE ──
     gl.useProgram(puddleProgram);
     gl.uniformMatrix4fv(ploc.model, false, flatten(mat4()));
     gl.uniformMatrix4fv(ploc.view,  false, flatten(viewMatrix));
     gl.uniformMatrix4fv(ploc.proj,  false, flatten(projMatrix));
     gl.uniform1f(ploc.time, time);
+    gl.uniform3fv(ploc.camPos, flatten(eye));
+    gl.uniform3fv(ploc.fireColor, lightColor);
+    gl.uniform1f(ploc.fireOn, lightOn ? 1.0 : 0.0);
 
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, reflectionTex);
-    gl.uniform1i(ploc.reflTex, 0);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture);
+    gl.uniform1i(ploc.skybox, 1);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, meshes.puddle.vbo);
     gl.vertexAttribPointer(ploc.vPos, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(ploc.vPos);
 
-    // Turn on transparency so the puddle fades slightly into the grass
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.depthMask(false);
@@ -750,6 +788,5 @@ function render(timestamp) {
     gl.depthMask(true);
     gl.disable(gl.BLEND);
 
-    // Call render again for the next frame
     requestAnimationFrame(render);
 }
