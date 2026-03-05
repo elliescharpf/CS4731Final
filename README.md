@@ -50,7 +50,7 @@ An interactive 3D campsite scene rendered in WebGL featuring a tent, campfire, l
 11. **Skybox**
 - A galaxy/night sky cubemap surrounds the entire scene using a TEXTURE_CUBE_MAP with 6 faces
 
-12. **Keyboard Controls*
+12. **Keyboard Controls**
 - Arrow Keys: Manually rotate camera
 - C: Toggle camera auto-rotation on/off
 - S: Toggle shadows on/off
