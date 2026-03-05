@@ -58,6 +58,11 @@ An interactive 3D campsite scene rendered in WebGL featuring a tent, campfire, l
 - A: Toggle lantern swing animation on/off
 - M: Toggle all sounds on/off
 
+13. **Extra Credit**
+- Added ambiance audio
+- Added campfire crackle audio that mutes when campfire light is turned off
+- Added mute button for audio
+
 ## Additional Instructions
 - Open index.html through a local server as OBJ and texture files require HTTP to load
 - All models must be in the /models directory
@@ -74,3 +79,6 @@ An interactive 3D campsite scene rendered in WebGL featuring a tent, campfire, l
 -
 **Ellie**
 - Made base model
+- Arrow camera animation
+- Projection shadows
+- Audio
