@@ -68,6 +68,9 @@ An interactive 3D campsite scene rendered in WebGL featuring a tent, campfire, l
 - talk about bottle refraction
 
 ## Group Responsibilities
-- [Amanda]: [xxxx]
-- [Benjamin]: [xxxx]
-- [Ellie]: [xxxx]
+**Amanda**
+-
+**Benjamin**
+-
+**Ellie**
+- Made base model
