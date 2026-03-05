@@ -36,14 +36,36 @@ let reflectionFBO, reflectionTex, reflectionDepth;
 let puddleProgram;
 let ploc = {};
 
+// Audio
+const ambianceAudio = new Audio("audio/ambiance.wav");
+ambianceAudio.loop = true;
+ambianceAudio.volume = 0.6;
+ambianceAudio.play();
+
+const fireAudio = new Audio("audio/fire.wav");
+fireAudio.loop = true;
+fireAudio.volume = 0.6;
+fireAudio.play();
+
+let muted = false;
+
 // Listen for keyboard inputs
 window.addEventListener("keydown", (e) => {
     if (e.key === "ArrowLeft") theta -= 2;
     if (e.key === "ArrowRight") theta += 2;
     if (e.key === "c" || e.key === "C") autoRotate = !autoRotate;
     if (e.key === "s" || e.key === "S") showShadows = !showShadows;
-    if (e.key === "d" || e.key === "D") lightOn = !lightOn;
+    if (e.key === "d" || e.key === "D") {
+        lightOn = !lightOn;
+        if (lightOn) fireAudio.play();
+        else fireAudio.pause();
+    }
     if (e.key === "a" || e.key === "A") swingLantern = !swingLantern;
+    if (e.key === "m" || e.key === "M") {
+        muted = !muted;
+        ambianceAudio.muted = muted;
+        fireAudio.muted = muted;
+    }
     updateStatus();
 });
 
@@ -55,7 +77,8 @@ function updateStatus() {
         `[C] Cam:${autoRotate ? "AUTO" : "MANUAL"}  ` +
         `[S] Shadows:${showShadows ? "ON" : "OFF"}  ` +
         `[D] Fire:${lightOn ? "ON" : "OFF"}  ` +
-        `[A] Lantern:${swingLantern ? "SWING" : "STILL"}`;
+        `[A] Lantern:${swingLantern ? "SWING" : "STILL"} ` +
+        `[M] Sound:${muted ? "OFF" : "ON"}`;
 }
 
 // Math trick to smash 3D coordinates onto a flat plane based on a light position
@@ -641,7 +664,7 @@ function render(timestamp) {
         gl.uniform3fv(lightPosLoc, flatten(passLightPos));
         gl.uniform3fv(mloc.lightColor, lightColor);
         gl.uniform1f(mloc.lightOn, lightOn ? 1.0 : 0.0);
-        gl.uniform3fv(mloc.ambCol, new Float32Array([0.05, 0.04, 0.1]));
+        gl.uniform3fv(mloc.ambCol, new Float32Array([0.15, 0.12, 0.2]));
         gl.uniform3fv(mloc.lanternPos, passLanternPos);
         gl.uniform3fv(mloc.lanternColor, lanternLightColor);
         gl.uniform1f(mloc.lanternOn, 1.0);
