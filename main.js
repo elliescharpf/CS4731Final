@@ -37,11 +37,13 @@ let puddleProgram;
 let ploc = {};
 
 // Audio
+// Ambiance Audio
 const ambianceAudio = new Audio("audio/ambiance.wav");
 ambianceAudio.loop = true;
 ambianceAudio.volume = 0.6;
 ambianceAudio.play();
 
+// Fire Crackle Audio
 const fireAudio = new Audio("audio/fire.wav");
 fireAudio.loop = true;
 fireAudio.volume = 0.6;
@@ -51,16 +53,22 @@ let muted = false;
 
 // Listen for keyboard inputs
 window.addEventListener("keydown", (e) => {
+    // Arrow camera controls
     if (e.key === "ArrowLeft") theta -= 2;
     if (e.key === "ArrowRight") theta += 2;
+    // Auto-Rotate camera
     if (e.key === "c" || e.key === "C") autoRotate = !autoRotate;
+    // Toggle Shadows
     if (e.key === "s" || e.key === "S") showShadows = !showShadows;
+    // Toggle campfire and crackle audio
     if (e.key === "d" || e.key === "D") {
         lightOn = !lightOn;
         if (lightOn) fireAudio.play();
         else fireAudio.pause();
     }
+    // Toggle lantern swinging animation
     if (e.key === "a" || e.key === "A") swingLantern = !swingLantern;
+    // Toggle Audio
     if (e.key === "m" || e.key === "M") {
         muted = !muted;
         ambianceAudio.muted = muted;
@@ -108,6 +116,7 @@ function makeDisk(cx, yVal, cz, r, segs, nx, ny, nz) {
     return {verts, norms, texs, idx};
 }
 
+// Cylinder function to make bottle base and top
 function makeCylinder(cx, y0, cz, r, h, segs) {
     let verts=[], norms=[], texs=[], idx=[];
     for (let i=0; i<=segs; i++) {
@@ -122,6 +131,7 @@ function makeCylinder(cx, y0, cz, r, h, segs) {
     return {verts, norms, texs, idx};
 }
 
+// Cone function to make bottle top
 function makeCone(cx, y0, cz, r, h, segs) {
     let verts=[], norms=[], texs=[], idx=[];
     let tipY=y0+h, slope=r/h;
@@ -135,22 +145,9 @@ function makeCone(cx, y0, cz, r, h, segs) {
     return {verts, norms, texs, idx};
 }
 
-// Procedural geometry specifically for the campfire flames
-function buildFireGeo() {
-    let verts=[], norms=[], texs=[], idx=[];
-    for (let i=0; i<8; i++) {
-        let a=(i/8)*2*Math.PI, r=0.15;
-        let bx=r*Math.cos(a), bz=r*Math.sin(a), b=verts.length/4;
-        verts.push(bx-0.15, 0,   bz, 1); norms.push(0,0,1); texs.push(0,0);
-        verts.push(bx+0.15, 0,   bz, 1); norms.push(0,0,1); texs.push(1,0);
-        verts.push(bx,      1.0, bz, 1); norms.push(0,0,1); texs.push(0.5,1);
-        idx.push(b, b+1, b+2);
-    }
-    return {verts, norms, texs, idx};
-}
-
+// Using cylinders and cone to make bottle
 function makeBottle() {
-    // Stack a cylinder body + tapered neck + thin cylinder top
+    // Stack cylinder body + tapered neck + thin cylinder top
     let parts = [
         makeCylinder(-1.5, 0, -1.5, 0.18, 0.8, 16),  // body
         makeCone(-1.5, 0.8, -1.5, 0.18, 0.25, 16),     // taper to neck
@@ -165,6 +162,20 @@ function makeBottle() {
         for (let t of p.texs)  texs.push(t);
         for (let i of p.idx)   idx.push(i + offset);
         offset += p.verts.length / 4;
+    }
+    return {verts, norms, texs, idx};
+}
+
+// Procedural geometry specifically for the campfire flames
+function buildFireGeo() {
+    let verts=[], norms=[], texs=[], idx=[];
+    for (let i=0; i<8; i++) {
+        let a=(i/8)*2*Math.PI, r=0.15;
+        let bx=r*Math.cos(a), bz=r*Math.sin(a), b=verts.length/4;
+        verts.push(bx-0.15, 0,   bz, 1); norms.push(0,0,1); texs.push(0,0);
+        verts.push(bx+0.15, 0,   bz, 1); norms.push(0,0,1); texs.push(1,0);
+        verts.push(bx,      1.0, bz, 1); norms.push(0,0,1); texs.push(0.5,1);
+        idx.push(b, b+1, b+2);
     }
     return {verts, norms, texs, idx};
 }
