@@ -548,11 +548,15 @@ function render(timestamp) {
     // Projection matrix = the camera's lens settings (FOV, near/far clipping planes)
     let projMatrix = perspective(45, 1, 0.1, 100);
 
-    // Add some random math functions to make the fire naturally pulse and flicker
-    let flicker    = 0.85 + 0.1*Math.sin(time*7.3) + 0.05*Math.cos(time*11.7);
+    // Add math functions to make the fire naturally pulse and flicker
+    let flicker = 0.85 + (Math.random() - 0.5) * 0.25;
     let lightPos   = vec3(0, 1.3 + 0.08*Math.sin(time*9), 0);
-    let lightColor = new Float32Array([1.0*flicker, 0.55*flicker, 0.08*flicker]);
-    
+    let lightColor = new Float32Array([
+        1.0 * flicker,
+        0.55 * flicker,
+        0.1 * flicker
+    ]);
+
     // Create the shadow squishing matrix for the campfire light
     let shadowM = makeShadowMat([lightPos[0], lightPos[1], lightPos[2]], 0.002);
 
