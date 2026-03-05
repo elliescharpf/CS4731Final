@@ -1,7 +1,8 @@
 # Campsite Scene
 
 ## Description
-An interactive 3D campsite scene rendered in WebGL featuring a tent, campfire, lantern, trees, bottle, and environmental effects including shadows, reflections, and refractions set against a galaxy skybox.
+An interactive 3D campsite scene rendered in WebGL featuring a tent, campfire, lantern, trees, bottle, 
+and environmental effects including shadows, reflections, and refractions set against a galaxy skybox.
 
 ## Team Members
 - Amanda Chavarria Pleitez
@@ -19,7 +20,8 @@ An interactive 3D campsite scene rendered in WebGL featuring a tent, campfire, l
 - Campfire flames animate with pulsing scale and flicker effects
 
 3. **Point Light / Phong Shading**
-- Campfire acts as a point light with attenuation, illuminating the scene using Phong shading with ambient, diffuse, and specular components.
+- Campfire acts as a point light with attenuation, illuminating the scene using Phong shading with 
+ambient, diffuse, and specular components.
 
 4. **Spotlight**
 - Lantern acts as a spotlight casting light straight downward onto the ground
@@ -31,7 +33,8 @@ An interactive 3D campsite scene rendered in WebGL featuring a tent, campfire, l
 - All have fallback solid color defaults while textures load
 
 6. **Camera Animation**
-- Camera orbits the scene automatically when auto-rotate is enabled, and can be manually rotated with arrow keys
+- Camera orbits the scene automatically when auto-rotate is enabled, and can be manually rotated with 
+arrow keys
 
 7. **Hierarchial Model**
 - Lantern post system: post(parent) -> arm(child) -> lantern(grandchild)
@@ -42,10 +45,12 @@ An interactive 3D campsite scene rendered in WebGL featuring a tent, campfire, l
 - Shaddows dissapear when the campfire is toggled off
 
 9. **Reflection**
-- A puddle near the campfire reflects the skybox stars and sky using cubemap environment mapping with an animated surface normal to simulate water ripples
+- A puddle near the campfire reflects the skybox stars and sky using cubemap environment mapping with 
+an animated surface normal to simulate water ripples
 
 10. **Refraction** - still working on
-- A glass bottle near the campfire demonstrates refraction using an exaggerated index of refraction (0.5 instead of real glass 0.67) to make the bending effect visible.
+- A glass bottle near the campfire demonstrates refraction using an exaggerated index of refraction 
+(0.5 instead of real glass 0.67) to make the bending effect visible.
 
 11. **Skybox**
 - A galaxy/night sky cubemap surrounds the entire scene using a TEXTURE_CUBE_MAP with 6 faces
@@ -70,7 +75,9 @@ An interactive 3D campsite scene rendered in WebGL featuring a tent, campfire, l
 - All audio must be in the /audio directory
 
 ## Challenges
-- talk about bottle refraction
+- Refraction what a challenge because in the lantern model it was hard to find out what parts of
+the model were glass, we ended up adding a simple glass bottle to achieve this refraction which
+ was also a challenge because of how small the bottle is and how dark our environment is.
 
 ## Group Responsibilities
 **Amanda**
