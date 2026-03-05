@@ -88,4 +88,9 @@ the model were glass, we ended up adding a simple glass bottle to achieve this r
 - Made base model
 - Arrow camera animation
 - Projection shadows
+- Refraction glass bottle (still working on)
 - Audio
+
+## Audio Attributions
+- FIREBurn_Burning Campfire.Crackling.Squawking.Flame Roar 4_EM_(15lrs).wav by newlocknew -- https://freesound.org/s/636708/ -- License: Attribution NonCommercial 4.0
+- Ambiance_Nature_Night_Cricket_Calm_Loop_Stereo.wav by Nox_Sound -- https://freesound.org/s/637083/ -- License: Creative Commons 0
