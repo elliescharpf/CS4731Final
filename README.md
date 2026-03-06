@@ -88,7 +88,7 @@ the model were glass, we ended up adding a simple glass bottle to achieve this r
 - Made base model
 - Arrow camera animation
 - Projection shadows
-- Refraction glass bottle (still working on)
+- Refraction glass bottle
 - Audio
 
 ## Audio Attributions

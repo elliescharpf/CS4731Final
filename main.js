@@ -782,6 +782,7 @@ function render(timestamp) {
             vec4(0.02, 0.08, 0.04, 1),
             vec4(0.5, 0.8, 0.6, 1), 64);
         drawMesh(meshes.bottle);
+        drawShadow(meshes.bottle, mat4(), shadowM);     // Bottle shadow
         drawEnvMesh(meshes.bottle, getModel(mat4()), true, 0.35);    }
 
     // ── PASS 1: NORMAL VIEW (Draw to Screen) ──
